@@ -1,9 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+
+export async function GET(request: NextRequest) {
+  console.log(request);
+  return Response.json({
+    ok: true,
+  });
+}
 
 export async function POST(request: NextRequest) {
-  const { email, password } = await request.json();
-
-  // do something with email and password
-
-  return NextResponse.json({ ok: true });
+  const data = await request.json();
+  console.log('log the user in!!!');
+  return Response.json(data);
 }
