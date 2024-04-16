@@ -7,12 +7,15 @@ import { redirect } from 'next/navigation';
 const phoneSchema = z
   .string()
   .trim()
-  .refine(
-    phone => validator.isMobilePhone(phone, 'ko-KR'),
-    'Wrong phone format',
-  );
+  .refine(value => validator.isMobilePhone(value, 'ko-KR'), {
+    message: 'Invalid phone number',
+  });
 
-const tokenSchema = z.coerce.number().min(100000).max(999999);
+const tokenSchema = z.coerce
+  .number()
+  .min(100000)
+  .max(999999)
+  .refine(value => String(value).length === 6, '토큰은 6자리여야 합니다.');
 
 interface ActionState {
   token: boolean;
@@ -21,27 +24,28 @@ interface ActionState {
 export async function smsLogIn(prevState: ActionState, formData: FormData) {
   const phone = formData.get('phone');
   const token = formData.get('token');
-  if (!prevState.token) {
-    const result = phoneSchema.safeParse(phone);
-    if (!result.success) {
-      return {
-        token: false,
-        error: result.error.flatten(),
-      };
-    } else {
-      return {
-        token: true,
-      };
+
+  const hasToken = prevState.token;
+
+  if (!hasToken) {
+    const phoneValue = phoneSchema.safeParse(phone);
+
+    const isValidPhone = phoneValue.success;
+
+    if (!isValidPhone) {
+      return { token: false, error: phoneValue.error.flatten() };
     }
-  } else {
-    const result = tokenSchema.safeParse(token);
-    if (!result.success) {
-      return {
-        token: true,
-        error: result.error.flatten(),
-      };
-    } else {
-      redirect('/');
-    }
+
+    return { token: true, error: undefined };
   }
+
+  const tokenValue = tokenSchema.safeParse(token);
+
+  const isValidToken = tokenValue.success;
+
+  if (!isValidToken) {
+    return { token: true, error: tokenValue.error.flatten() };
+  }
+
+  redirect('/');
 }
